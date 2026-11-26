@@ -4,7 +4,7 @@
   "private": true,
   "description": "Public agent-fleet record for Alzheimer's research, modelled on pequalnp.com",
   "type": "module",
-  "engines": { "node": ">=20" },
+  "engines": { "node": "22.x" },
   "scripts": {
     "build": "node scripts/build.mjs",
     "migrate": "node scripts/migrate.mjs",
