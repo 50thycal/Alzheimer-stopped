@@ -57,3 +57,13 @@ ${entries}
 </feed>
 `);
 console.log(`ok: ${programs.size} programs, ${data.claims.length} claims, feed written for ${SITE}`);
+
+// Apply schema + seed when a database is attached (Neon via the Vercel Marketplace sets DATABASE_URL).
+const DB = process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL || process.env.POSTGRES_URL;
+if (DB) {
+  const { migrate } = await import('./migrate.mjs');
+  const r = await migrate(DB);
+  console.log(`migrate: ok, ${r.programs} programs, ${r.seeded} claims seeded`);
+} else {
+  console.log('migrate: no DATABASE_URL, site runs on static data');
+}

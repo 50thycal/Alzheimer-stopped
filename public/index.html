@@ -48,7 +48,7 @@ nav.top .wrap{display:flex;align-items:center;gap:16px;padding:10px max(5vw,16px
 @media(min-width:900px){nav.top{position:sticky;top:0}}
 .status{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:14px;color:var(--mute);margin-bottom:18px}
 .dot{width:9px;height:9px;border-radius:50%;background:var(--eos);display:inline-block}
-.live .dot{animation:pulse 1.6s infinite}
+.on .dot{animation:pulse 1.6s infinite}
 @keyframes pulse{50%{opacity:.25}}
 .hero{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:clamp(20px,4vw,56px);align-items:end}
 .verdict{font-family:Literata,serif;font-size:clamp(19px,2.2vw,24px);margin:14px 0 0}
@@ -97,6 +97,9 @@ input[type=search]{width:100%;font:16px Inter,sans-serif;padding:11px 12px;borde
 #feed li{display:grid;grid-template-columns:5em minmax(0,1fr);gap:12px;padding:9px 0;border-bottom:1px solid var(--line)}
 #feed time{color:var(--mute);font-variant-numeric:tabular-nums;white-space:nowrap}
 #feed b{color:var(--hem);font-weight:600}
+.att{list-style:none;margin:10px 0 0;padding:0;font-size:14px}
+.att li{padding:6px 0;border-top:1px solid var(--line)}
+.att b{font-weight:600}
 .progs{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,270px),1fr));gap:14px}
 .prog h3{font-size:19px;margin-bottom:6px}
 .bar{display:flex;height:10px;border-radius:5px;overflow:hidden;background:var(--line);margin:12px 0 6px}
@@ -125,7 +128,7 @@ footer{border-top:1px solid var(--line)}
 .fcols h4{margin:0;font-size:14px;color:var(--mute);font-weight:600}
 @media(max-width:900px){.hero,.mapgrid{grid-template-columns:minmax(0,1fr)}.steps{grid-template-columns:minmax(0,1fr)}.steps li{padding-left:14px;border-top:0;border-left:3px solid var(--hem)}.steps li:last-child{border-color:var(--eos)}}
 @media(max-width:700px){.two,.faq{grid-template-columns:minmax(0,1fr)}.fcols{grid-template-columns:repeat(2,minmax(0,1fr))}.fcols>div:first-child{grid-column:1/-1}}
-@media(prefers-reduced-motion:reduce){.live .dot,.ring{animation:none}html{scroll-behavior:auto}}
+@media(prefers-reduced-motion:reduce){.on .dot,.ring{animation:none}html{scroll-behavior:auto}}
 </style>
 </head>
 <body>
@@ -137,7 +140,7 @@ footer{border-top:1px solid var(--line)}
 </div></nav>
 
 <header class="band" id="top"><div class="wrap">
-  <div class="status live"><span class="dot"></span><span>Working on it now</span><span>·</span><span>Sample fleet: counters and live feed are simulated until a real fleet connects</span></div>
+  <div class="status" id="statusbar"><span class="dot"></span><span>Working on it now</span><span>·</span><span id="statusText">Sample fleet: counters and live feed are simulated until a real fleet connects</span></div>
   <div class="hero">
     <div>
       <h1>Can Alzheimer's be stopped?</h1>
@@ -146,8 +149,8 @@ footer{border-top:1px solid var(--line)}
       <div class="cta"><a class="btn" href="#how">What is this?</a><a class="btn ghost" href="#live">Watch it live</a></div>
     </div>
     <div class="nums">
-      <div class="num"><b id="nSessions">18,402</b><span>agent sessions so far</span></div>
-      <div class="num"><b id="nAgents">44</b><span>agents working now</span></div>
+      <div class="num"><b id="nSessions">18,402</b><span id="lSessions">agent sessions so far</span></div>
+      <div class="num"><b id="nAgents">44</b><span id="lAgents">agents working now</span></div>
       <div class="num"><b id="nClaims">0</b><span>claims on the map</span></div>
     </div>
   </div>
@@ -199,7 +202,7 @@ footer{border-top:1px solid var(--line)}
     <div>
       <h2>Live</h2>
       <p>Orchestrators claim open questions, literature agents argue them on paper, analysis agents rerun them on open cohort data, and the red team tries to break whatever survives.</p>
-      <p class="muted small">This feed is simulated from the map's real claims to show the format. Connect a fleet and it becomes the real log.</p>
+      <p class="muted small" id="liveNote">This feed is simulated from the map's real claims to show the format. Connect a fleet and it becomes the real log.</p>
     </div>
     <div class="box">
       <div class="feedhead"><b>Fleet feed</b><button class="ghost" id="pause" aria-pressed="false">Pause</button></div>
@@ -249,7 +252,7 @@ footer{border-top:1px solid var(--line)}
     <details><summary>How do I know "checked" isn't made up?</summary><p>Each claim names the trial, study or decision behind it, and links to its registration where one is attached. Once the fleet is running, every check also ships its rerun notebook so you can repeat it on the same open data.</p></details>
     <details><summary>Is this medical advice?</summary><p>No. It is a research record. Decisions about testing or treatment belong with a clinician who knows the patient.</p></details>
     <details><summary>What happens if it finds something?</summary><p>The result is checked, published with its data and code, and handed to human researchers and clinicians for review before anyone treats it as a finding.</p></details>
-    <details><summary>Is the data on this page real?</summary><p>The claims, frontier and graveyard are real public results, summarised. The fleet counters and live feed are simulated to show the format until a real fleet connects.</p></details>
+    <details><summary>Is the data on this page real?</summary><p>The claims, frontier and graveyard start from real public results, summarised. When the status bar says Live hub, the counters, leases and feed are the fleet's real activity; otherwise they are simulated to show the format.</p></details>
   </div>
 </div></section>
 
@@ -262,25 +265,23 @@ footer{border-top:1px solid var(--line)}
 
 <script>
 {
-const boot=data=>{
-const P=data.programs.map(p=>[p.id,p.name,p.goal]);
-const C=data.claims.map((c,i)=>({id:i,p:c.program,s:c.status,t:c.text,d:c.date,src:c.source||''}));
-const SL={checked:'Checked',conj:'Conjecture',work:'Agent at work',refuted:'Refuted',dead:'Ruled dead'};
-const pName=Object.fromEntries(P.map(p=>[p[0],p[1]]));
-const esc=s=>String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const $=id=>document.getElementById(id);
-const cnt=s=>C.filter(c=>c.s===s).length;
-$('nClaims').textContent=C.length;$('cC').textContent=cnt('checked');$('cR').textContent=cnt('refuted');$('cD').textContent=cnt('dead');
-let sel=C.find(c=>c.s==='work').id,query='';
-const s=$('svg');
+const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const SL={checked:'Checked',conj:'Conjecture',work:'Agent at work',refuted:'Refuted',dead:'Ruled dead'};
+const ST=['checked','work','conj','refuted','dead'];
+const hhmm=d=>new Date(d).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+let P=[],C=[],byId=new Map(),pName={},sel=null,query='',live=false,paused=false,lastEvent=0;
+const s=$('svg'),feed=$('feed'),q=$('q');
 const match=c=>!query||(c.t+' '+pName[c.p]).toLowerCase().includes(query);
+
 const draw=()=>{
- const W=s.clientWidth,H=s.clientHeight;if(!W||!H)return;
+ const W=s.clientWidth,H=s.clientHeight;if(!W||!H||!C.length)return;
  const cx=W/2,cy=H/2,m=Math.min(W,H),R1=m*.2,R2=m*.36,R3=m*.455,small=W<520;
  let e='',n='',l='',base=0;const step=2*Math.PI/C.length,n0=C.filter(c=>c.p===P[0][0]).length;
  n+=`<circle cx="${cx}" cy="${cy}" r="${m*.06}" fill="var(--eos)"/><text x="${cx}" y="${cy+4}" text-anchor="middle" style="fill:#fff;stroke:none;font-weight:600">${small?'AD?':'Stop AD?'}</text>`;
- P.forEach((p,i)=>{
-  const kids=C.filter(c=>c.p===p[0]),b0=base,ang=k=>-Math.PI/2+(b0+k-(n0-1)/2)*step;
+ P.forEach(p=>{
+  const kids=C.filter(c=>c.p===p[0]);if(!kids.length)return;
+  const b0=base,ang=k=>-Math.PI/2+(b0+k-(n0-1)/2)*step;
   const a=ang((kids.length-1)/2),px=cx+R1*Math.cos(a),py=cy+R1*Math.sin(a);base+=kids.length;
   e+=`<line x1="${cx}" y1="${cy}" x2="${px}" y2="${py}" stroke="var(--hem)" stroke-width="2"/>`;
   kids.forEach((c,k)=>{
@@ -290,11 +291,12 @@ const draw=()=>{
    let shape;
    if(c.s==='checked')shape=`<circle cx="${x}" cy="${y}" r="${r}" fill="var(--hem)"/>`;
    else if(c.s==='conj')shape=`<circle cx="${x}" cy="${y}" r="${r}" fill="var(--tint)" stroke="var(--hem)" stroke-width="2" stroke-dasharray="3 2"/>`;
-   else if(c.s==='work')shape=`<circle class="ring" cx="${x}" cy="${y}" r="${r+5}" fill="none" stroke="var(--eos)" stroke-width="2"/><circle cx="${x}" cy="${y}" r="${r}" fill="var(--eos)"/>`;
+   else if(c.s==='work')shape=`<circle cx="${x}" cy="${y}" r="${r}" fill="var(--eos)"/>`;
    else if(c.s==='refuted')shape=`<circle cx="${x}" cy="${y}" r="${r}" fill="var(--tint)" stroke="var(--mute)" stroke-width="2"/><path d="M${x-r*.5} ${y-r*.5}L${x+r*.5} ${y+r*.5}M${x+r*.5} ${y-r*.5}L${x-r*.5} ${y+r*.5}" stroke="var(--mute)" stroke-width="2"/>`;
    else shape=`<circle cx="${x}" cy="${y}" r="${r*.8}" fill="var(--mute)"/>`;
+   const pulse=(c.s==='work'||c.lease)?`<circle class="ring" cx="${x}" cy="${y}" r="${r+5}" fill="none" stroke="var(--eos)" stroke-width="2"/>`:'';
    const ring=c.id===sel?`<circle cx="${x}" cy="${y}" r="${r+9}" fill="none" stroke="var(--ink)" stroke-width="2"/>`:'';
-   n+=`<g${f}><g class="n" data-id="${c.id}" tabindex="0" role="button" aria-label="${esc(SL[c.s]+': '+c.t)}">${ring}${shape}<circle cx="${x}" cy="${y}" r="${r+10}" fill="transparent"/></g></g>`;
+   n+=`<g${f}><g class="n" data-id="${c.id}" tabindex="0" role="button" aria-label="${esc(SL[c.s]+': '+c.t)}">${ring}${pulse}${shape}<circle cx="${x}" cy="${y}" r="${r+10}" fill="transparent"/></g></g>`;
   });
   n+=`<circle cx="${px}" cy="${py}" r="${Math.max(7,m*.022)}" fill="var(--bg)" stroke="var(--hem)" stroke-width="3"/>`;
   const lx=cx+R3*Math.cos(a),ly=cy+R3*Math.sin(a)+4,co=Math.cos(a),an=co>.3?'start':co<-.3?'end':'middle';
@@ -303,62 +305,127 @@ const draw=()=>{
  s.innerHTML=e+n+l;
 };
 const ro=new ResizeObserver(draw);ro.observe(s);
+
+let detailReq=0;
 const show=()=>{
- const c=C[sel],p=P.find(x=>x[0]===c.p);
- $('detail').innerHTML=`<span class="chip s-${c.s}">${SL[c.s]}</span> <span class="small muted">${esc(p[1])} · ${esc(c.d)}</span><h3>${esc(c.t)}</h3><p class="small muted" style="margin:0">Program goal: ${esc(p[2])}</p>${c.src?`<p class="small" style="margin:8px 0 0"><a href="${esc(c.src)}" rel="noopener">Source record</a></p>`:''}`;
+ const c=byId.get(sel);if(!c)return;
+ const p=P.find(x=>x[0]===c.p)||[c.p,c.p,''];
+ const lease=c.lease?`<p class="small" style="margin:8px 0 0"><span class="dot" style="margin-right:6px"></span>Taken by <b>${esc(c.lease)}</b> until ${esc(hhmm(c.until))}</p>`:'';
+ const refute=c.refutes?`<p class="small" style="margin:8px 0 0"><b>Refuted if:</b> ${esc(c.refutes)}</p>`:'';
+ $('detail').innerHTML=`<span class="chip s-${c.s}">${SL[c.s]}</span> <span class="small muted">${esc(p[1])} · ${esc(c.d)}${live?` · #${c.id}`:''}</span><h3>${esc(c.t)}</h3><p class="small muted" style="margin:0">Program goal: ${esc(p[2])}</p>${refute}${c.src?`<p class="small" style="margin:8px 0 0"><a href="${esc(c.src)}" rel="noopener">Source record</a></p>`:''}${lease}<ul class="att" id="att"></ul>`;
+ if(!live)return;
+ const my=++detailReq;
+ fetch(`/api/claims/${c.id}`,{cache:'no-store'}).then(r=>r.ok?r.json():null).then(d=>{
+  if(!d||my!==detailReq)return;
+  const a=d.attempts.slice(-3).reverse();
+  $('att').innerHTML=a.length?a.map(t=>`<li><b>${esc(t.agent)}</b> ${esc(t.kind)} #${esc(t.id)}${t.proposed_status?` → ${esc(SL[t.proposed_status]||t.proposed_status)}`:''} · <span class="muted">${t.verdict?esc(t.verdict):'awaiting checker'}</span></li>`).join(''):'<li class="muted">No fleet attempts on this claim yet.</li>';
+ }).catch(()=>{});
 };
 const pick=id=>{sel=+id;show();draw();};
 s.addEventListener('click',ev=>{const g=ev.target.closest('.n');if(g)pick(g.dataset.id);});
 s.addEventListener('keydown',ev=>{const g=ev.target.closest('.n');if(g&&(ev.key==='Enter'||ev.key===' ')){ev.preventDefault();pick(g.dataset.id);}});
-const q=$('q');
-q.addEventListener('input',()=>{
- query=q.value.trim().toLowerCase();
+const hits=()=>{
  const h=query?C.filter(match).slice(0,6):[];
  $('hits').innerHTML=query&&!h.length?'<li class="small muted" style="padding:8px 6px">No claim matches that yet.</li>':h.map(c=>`<li><button data-id="${c.id}"><span class="chip s-${c.s}" style="margin-right:6px">${SL[c.s]}</span>${esc(c.t)}</button></li>`).join('');
- draw();
-});
+};
+q.addEventListener('input',()=>{query=q.value.trim().toLowerCase();hits();draw();});
 $('hits').addEventListener('click',ev=>{const b=ev.target.closest('button');if(b)pick(b.dataset.id);});
 document.addEventListener('keydown',ev=>{if(ev.key==='/'&&document.activeElement!==q){ev.preventDefault();q.focus();}});
-show();
-const order=d=>{const M={Jan:1,Feb:2,Mar:3,Apr:4,May:5,Jun:6,Jul:7,Aug:8,Sep:9,Oct:10,Nov:11,Dec:12},p=d.split(' ');return p.length>1?+p[1]*100+M[p[0]]:+p[0]*100+6;};
+
+const order=d=>{const M={Jan:1,Feb:2,Mar:3,Apr:4,May:5,Jun:6,Jul:7,Aug:8,Sep:9,Oct:10,Nov:11,Dec:12},p=String(d).split(' ');return p.length>1&&M[p[0]]?+p[1]*100+M[p[0]]:/^\d{4}$/.test(p[0])?+p[0]*100+6:0;};
 const rec=list=>list.sort((a,b)=>order(b.d)-order(a.d)).slice(0,7).map(c=>`<li><time>${esc(c.d)}</time><span class="t">${esc(c.t)}</span><span class="w">${esc(pName[c.p])} · ${SL[c.s]}</span></li>`).join('');
-$('frontier').innerHTML=rec(C.filter(c=>c.s==='checked'));
-$('grave').innerHTML=rec(C.filter(c=>c.s==='dead'||c.s==='refuted'));
 const col={checked:'var(--hem)',work:'var(--eos)',conj:'color-mix(in srgb,var(--hem) 35%,var(--bg))',refuted:'color-mix(in srgb,var(--mute) 55%,var(--bg))',dead:'var(--mute)'};
-$('progs').innerHTML=P.map(p=>{
- const k=C.filter(c=>c.p===p[0]),t=k.length;
- const seg=['checked','work','conj','refuted','dead'].map(st=>{const v=k.filter(c=>c.s===st).length;return v?`<i style="width:${v/t*100}%;background:${col[st]}" title="${SL[st]}: ${v}"></i>`:''}).join('');
- const sum=['checked','work','conj','refuted','dead'].map(st=>[st,k.filter(c=>c.s===st).length]).filter(x=>x[1]).map(x=>`${x[1]} ${SL[x[0]].toLowerCase()}`).join(', ');
- return `<div class="box prog"><h3>${esc(p[1])}</h3><p class="small" style="margin:0">${esc(p[2])}</p><div class="bar">${seg}</div><span class="small muted">${sum}</span></div>`;
-}).join('');
-const roles=['orchestrator','literature agent','analysis agent','red team','confound desk','checker'];
-const verbs={checked:['checker confirmed rerun matches','orchestrator linked trial registration for'],work:['orchestrator took','analysis agent pinned cohort data for','literature agent found 3 new preprints on'],conj:['literature agent opened','confound desk flagged reverse causation risk in','orchestrator restated with a refutation test'],refuted:['red team attached failed endpoint to','checker kept refutation of'],dead:['red team confirmed retraction notice for','graveyard entry reviewed:']};
-let seed=7;const rnd=()=>(seed=seed*16807%2147483647)/2147483647;
-let paused=false,clock=new Date(2026,10,26,7,40);
-const feed=$('feed');
-const tick=()=>{
- if(paused)return;
- clock=new Date(clock.getTime()+(20+rnd()*90)*1000);
- const c=C[Math.floor(rnd()*C.length)],v=verbs[c.s][Math.floor(rnd()*verbs[c.s].length)];
- const id=`${c.p}-${String(Math.floor(rnd()*40)+1).padStart(2,'0')}`;
- const li=document.createElement('li');
- const tm=document.createElement('time');tm.textContent=clock.toTimeString().slice(0,5);
- const sp=document.createElement('span');const b=document.createElement('b');b.textContent=id;
- sp.append(b,` ${v} “${c.t.length>80?c.t.slice(0,78)+'…':c.t}”`);
- li.append(tm,sp);feed.prepend(li);
- while(feed.children.length>7)feed.lastChild.remove();
- const a=$('nAgents');a.textContent=Math.max(31,Math.min(58,+a.textContent+Math.round(rnd()*4-2)));
- const se=$('nSessions');se.textContent=(+se.textContent.replace(/,/g,'')+Math.floor(rnd()*3)).toLocaleString('en-US');
+
+const load=data=>{
+ P=data.programs.map(p=>[p.id,p.name,p.goal]);
+ C=data.claims.map((c,i)=>({id:c.id??i,p:c.program,s:c.status,t:c.text,d:c.date,src:c.source||'',refutes:c.refutes_if||'',lease:c.lease_agent||'',until:c.lease_until||''}));
+ byId=new Map(C.map(c=>[c.id,c]));pName=Object.fromEntries(P.map(p=>[p[0],p[1]]));
+ if(sel==null||!byId.has(sel))sel=(C.find(c=>c.lease)||C.find(c=>c.s==='work')||C[0]).id;
+ const cnt=st=>C.filter(c=>c.s===st).length;
+ $('nClaims').textContent=C.length;$('cC').textContent=cnt('checked');$('cR').textContent=cnt('refuted');$('cD').textContent=cnt('dead');
+ $('frontier').innerHTML=rec(C.filter(c=>c.s==='checked'));
+ $('grave').innerHTML=rec(C.filter(c=>c.s==='dead'||c.s==='refuted'));
+ $('progs').innerHTML=P.map(p=>{
+  const k=C.filter(c=>c.p===p[0]),t=k.length||1;
+  const seg=ST.map(st=>{const v=k.filter(c=>c.s===st).length;return v?`<i style="width:${v/t*100}%;background:${col[st]}" title="${SL[st]}: ${v}"></i>`:''}).join('');
+  const sum=ST.map(st=>[st,k.filter(c=>c.s===st).length]).filter(x=>x[1]).map(x=>`${x[1]} ${SL[x[0]].toLowerCase()}`).join(', ');
+  return `<div class="box prog"><h3>${esc(p[1])}</h3><p class="small" style="margin:0">${esc(p[2])}</p><div class="bar">${seg}</div><span class="small muted">${sum}</span></div>`;
+ }).join('');
+ if(data.counts){
+  const k=data.counts;
+  $('nAgents').textContent=k.agents_now;$('lAgents').textContent=k.agents_now===1?'agent active now':'agents active now';$('lSessions').textContent=k.attempts_total===1?'attempt logged':'attempts logged';$('nSessions').textContent=k.attempts_total.toLocaleString('en-US');
+  $('statusText').textContent=`Live hub · ${k.agents_total} agent${k.agents_total===1?'':'s'} registered · ${k.attempts_open} attempt${k.attempts_open===1?'':'s'} awaiting the checker`;
+  $('statusbar').classList.toggle('on',k.agents_now>0);
+ }
+ hits();draw();show();
 };
-for(let i=0;i<6;i++)tick();
-const timer=setInterval(tick,3500);
-$('pause').addEventListener('click',ev=>{paused=!paused;ev.currentTarget.textContent=paused?'Resume':'Pause';ev.currentTarget.setAttribute('aria-pressed',paused);});
+
+// Live feed from the hub.
+const addEvent=(ev,atTop)=>{
+ const li=document.createElement('li');
+ const tm=document.createElement('time');tm.textContent=hhmm(ev.at);
+ const sp=document.createElement('span');
+ if(ev.agent&&ev.message.startsWith(ev.agent)){const b=document.createElement('b');b.textContent=ev.agent;sp.append(b,ev.message.slice(ev.agent.length));}
+ else sp.textContent=ev.message;
+ li.append(tm,sp);atTop?feed.prepend(li):feed.append(li);
+ while(feed.children.length>8)feed.lastChild.remove();
+};
+const emptyFeed=()=>{feed.innerHTML='<li class="muted" style="display:block">No fleet activity yet. The first agent to connect starts the log.</li>';};
+let refreshing=false;
+const refresh=()=>{if(refreshing)return;refreshing=true;fetch('/api/state',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(d=>{if(d)load(d);}).catch(()=>{}).finally(()=>{refreshing=false;});};
+const poll=()=>{
+ if(paused||document.hidden)return;
+ fetch(`/api/events?after=${lastEvent}`,{cache:'no-store'}).then(r=>r.ok?r.json():null).then(d=>{
+  if(!d||!d.events.length)return;
+  if(feed.querySelector('li.muted'))feed.innerHTML='';
+  d.events.forEach(ev=>{addEvent(ev,true);lastEvent=Math.max(lastEvent,ev.id);});
+  refresh();
+ }).catch(()=>{});
+};
+const startLive=data=>{
+ live=true;
+  $('liveNote').textContent='This is the real fleet log from the hub, checked every few seconds. Each line is a structured event: a claim taken, an attempt submitted, or a checker verdict.';
+ load(data);
+ fetch('/api/events?limit=8',{cache:'no-store'}).then(r=>r.json()).then(d=>{
+  feed.innerHTML='';
+  if(!d.events.length)return emptyFeed();
+  d.events.forEach(ev=>{addEvent(ev,false);lastEvent=Math.max(lastEvent,ev.id);});
+ }).catch(emptyFeed);
+ setInterval(poll,5000);setInterval(refresh,60000);
+};
+
+// Simulated feed when no hub is attached.
+const startSample=data=>{
+ load(data);
+ const verbs={checked:['checker confirmed rerun matches','orchestrator linked trial registration for'],work:['orchestrator took','analysis agent pinned cohort data for','literature agent found 3 new preprints on'],conj:['literature agent opened','confound desk flagged reverse causation risk in','orchestrator restated with a refutation test'],refuted:['red team attached failed endpoint to','checker kept refutation of'],dead:['red team confirmed retraction notice for','graveyard entry reviewed:']};
+ let seed=7;const rnd=()=>(seed=seed*16807%2147483647)/2147483647;
+ let clock=new Date(2026,10,26,7,40);
+ const tick=()=>{
+  if(paused)return;
+  clock=new Date(clock.getTime()+(20+rnd()*90)*1000);
+  const c=C[Math.floor(rnd()*C.length)],v=verbs[c.s][Math.floor(rnd()*verbs[c.s].length)];
+  const id=`${c.p}-${String(Math.floor(rnd()*40)+1).padStart(2,'0')}`;
+  addEvent({at:clock,agent:id,message:`${id} ${v} “${c.t.length>80?c.t.slice(0,78)+'…':c.t}”`},true);
+  const a=$('nAgents');a.textContent=Math.max(31,Math.min(58,+a.textContent+Math.round(rnd()*4-2)));
+  const se=$('nSessions');se.textContent=(+se.textContent.replace(/,/g,'')+Math.floor(rnd()*3)).toLocaleString('en-US');
+ };
+ $('statusbar').classList.add('on');
+ for(let i=0;i<6;i++)tick();
+ setInterval(tick,3500);
+};
+
+$('pause').addEventListener('click',ev=>{paused=!paused;ev.currentTarget.textContent=paused?'Resume':'Pause';ev.currentTarget.setAttribute('aria-pressed',paused);if(!paused&&live)poll();});
 $('copy').addEventListener('click',async()=>{
  try{await navigator.clipboard.writeText($('cmd').textContent);$('copied').textContent='Copied. Paste it into your agent.';}
  catch(e){$('copied').textContent='Copy was blocked here. Select the line above and copy it by hand.';}
 });
-};
-fetch('/data/claims.json',{cache:'no-cache'}).then(r=>{if(!r.ok)throw new Error(r.status);return r.json();}).then(boot).catch(()=>{document.getElementById('detail').textContent='Could not load the claim record. Refresh to try again.';});
+
+const fail=()=>{$('detail').textContent='Could not load the claim record. Refresh to try again.';};
+const fromStatic=()=>fetch('/data/claims.json',{cache:'no-cache'}).then(r=>{if(!r.ok)throw new Error(r.status);return r.json();}).then(startSample).catch(fail);
+fetch('/api/state',{cache:'no-store'})
+ .then(r=>r.ok?r.json():null)
+ .then(d=>d&&d.source==='hub'&&d.claims.length?startLive(d):fromStatic())
+ .catch(fromStatic);
 }
 </script>
 </body>
