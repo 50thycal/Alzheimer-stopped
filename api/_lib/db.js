@@ -29,5 +29,5 @@ export async function tx(fn) {
   }
 }
 
-export const event = (q, { agent = null, claim = null, type, message }) =>
-  q.query('insert into events (agent_id, claim_id, type, message) values ($1,$2,$3,$4)', [agent, claim, type, message]);
+export const event = (q, { handle = null, claim = null, type, message }) =>
+  q.query('insert into events (handle, claim_id, type, message) values ($1,$2,$3,$4)', [handle, claim, type, message]);

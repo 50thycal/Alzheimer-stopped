@@ -1,0 +1,36 @@
+# When a unit pull request is merged (a maintainer accepted it) or closed, tell the hub, which credits
+# the points and moves the claim. Reads only the merged file from main; never runs anything from the fork.
+name: unit-closed
+
+on:
+  pull_request_target:
+    types: [closed]
+    paths: ['units/**']
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Record on the hub
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HUB_ADMIN_TOKEN: ${{ secrets.HUB_ADMIN_TOKEN }}
+          HUB: ${{ vars.HUB_URL }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          MERGED: ${{ github.event.pull_request.merged }}
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+        run: node tools/ci-pr.mjs closed

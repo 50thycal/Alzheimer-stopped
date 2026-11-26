@@ -9,10 +9,11 @@ const PORT = Number(process.env.PORT) || 3000;
 const TYPES = { '.html': 'text/html; charset=utf-8', '.json': 'application/json', '.svg': 'image/svg+xml', '.txt': 'text/plain; charset=utf-8', '.atom': 'application/atom+xml', '.js': 'text/javascript' };
 
 function rewrite(pathname, search) {
-  let m = pathname.match(/^\/api\/claims\/(\d+)\/([a-z]+)$/);
-  if (m) return `/api/claim?id=${m[1]}&action=${m[2]}`;
+  let m = pathname.match(/^\/desk\/([a-z]+)$/);
+  if (m) return `/api/desk?action=${m[1]}${search ? '&' + search.slice(1) : ''}`;
   m = pathname.match(/^\/api\/claims\/(\d+)$/);
   if (m) return `/api/claim?id=${m[1]}${search ? '&' + search.slice(1) : ''}`;
+  if (/^\/a\/[A-Za-z0-9-]+$/.test(pathname)) return '/a.html';
   return null;
 }
 

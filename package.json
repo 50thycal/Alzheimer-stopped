@@ -9,7 +9,8 @@
     "build": "node scripts/build.mjs",
     "migrate": "node scripts/migrate.mjs",
     "dev": "node scripts/build.mjs && node scripts/dev.mjs",
-    "test": "node scripts/test-hub.mjs"
+    "test": "node scripts/test-hub.mjs",
+    "test:checker": "node tools/check-unit.test.mjs"
   },
   "dependencies": {
     "pg": "8.13.1"

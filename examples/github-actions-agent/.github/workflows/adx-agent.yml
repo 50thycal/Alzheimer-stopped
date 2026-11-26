@@ -1,0 +1,106 @@
+# Runs the Alzheimer's agent on GitHub's hosted runners, about once every 5 hours.
+# GitHub can delay or drop scheduled runs, so the schedule ticks hourly and a small gate job lets a
+# tick through only when the last run started at least MIN_GAP_MINUTES ago (logs/LAST_RUN).
+name: adx-agent
+
+on:
+  schedule:
+    - cron: "23 * * * *"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Run now even if the last run was recent"
+        type: boolean
+        default: true
+
+concurrency:
+  group: adx-agent
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+env:
+  MIN_GAP_MINUTES: "280"
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      go: ${{ steps.check.outputs.go }}
+    steps:
+      - id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          FORCE: ${{ inputs.force }}
+          REPO: ${{ github.repository }}
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          if [ "$EVENT" = "workflow_dispatch" ] && [ "$FORCE" = "true" ]; then echo "go=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          last=$(gh api "repos/$REPO/contents/logs/LAST_RUN?ref=$BRANCH" -H "Accept: application/vnd.github.raw" 2>/dev/null | tr -dc '0-9' || true)
+          if [ -z "$last" ]; then echo "go=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          age=$(( ($(date +%s) - last) / 60 ))
+          if [ "$age" -ge "$MIN_GAP_MINUTES" ]; then echo "go=true" >> "$GITHUB_OUTPUT"; else echo "go=false" >> "$GITHUB_OUTPUT"; fi
+
+  run:
+    needs: gate
+    if: needs.gate.outputs.go == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 110
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Record the start time
+        run: mkdir -p logs && date +%s > logs/LAST_RUN
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+      - name: Git identity
+        env:
+          GH_TOKEN: ${{ secrets.ADX_GH_TOKEN }}
+        run: |
+          login=$(gh api user --jq .login)
+          id=$(gh api user --jq .id)
+          git config --global user.name "$login"
+          git config --global user.email "$id+$login@users.noreply.github.com"
+          gh auth setup-git
+      - name: Run the agent
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          GH_TOKEN: ${{ secrets.ADX_GH_TOKEN }}
+          ADX_MODEL: claude-opus-5-5
+        run: |
+          mkdir -p logs/transcripts
+          T="logs/transcripts/$(date -u +%Y-%m-%dT%H%MZ).jsonl"
+          TB=$(grep -oE 'TIME_BOX_MINUTES:[[:space:]]*[0-9]+' AGENT.md | grep -oE '[0-9]+$' || echo 60)
+          END_UTC=$(date -u -d "@$(( $(date +%s) + TB * 60 ))" +%H:%MZ)
+          PROMPT="You are running unattended in a GitHub Actions job in this repository's checkout. Follow AGENT.md exactly.
+          Today is $(date -u +%Y-%m-%d). Your time box is $TB minutes and ends at $END_UTC (UTC). Run 'date -u' before every
+          new unit. Never print, echo, log or commit any token or environment variable value. Do not commit or push this
+          repository: the workflow does it after you finish."
+          timeout "$(( TB + 10 ))m" claude -p "$PROMPT" --model claude-opus-5-5 --max-turns 250 \
+            --dangerously-skip-permissions --output-format stream-json --verbose > "$T" || echo "agent exited with $?"
+      - name: Scrub secrets and push logs
+        if: always()
+        env:
+          S1: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          S2: ${{ secrets.ADX_GH_TOKEN }}
+        run: |
+          python3 - <<'PY'
+          import os, pathlib
+          secrets = [s for s in (os.environ.get("S1"), os.environ.get("S2")) if s]
+          for p in pathlib.Path("logs").rglob("*"):
+              if p.is_file():
+                  t = p.read_text(errors="ignore"); u = t
+                  for s in secrets: u = u.replace(s, "[REDACTED]")
+                  if u != t: p.write_text(u)
+          PY
+          git add -A logs NOTES.md || true
+          git commit -q -m "Agent run $(date -u +%Y-%m-%dT%H:%MZ)" || true
+          git pull -q --rebase origin "${GITHUB_REF_NAME}" || true
+          git push -q origin "HEAD:${GITHUB_REF_NAME}"

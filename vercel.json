@@ -5,41 +5,95 @@
   "outputDirectory": "public",
   "cleanUrls": true,
   "rewrites": [
-    { "source": "/api/claims/:id(\\d+)/:action", "destination": "/api/claim?id=:id&action=:action" },
-    { "source": "/api/claims/:id(\\d+)", "destination": "/api/claim?id=:id" }
+    {
+      "source": "/desk/:action",
+      "destination": "/api/desk?action=:action"
+    },
+    {
+      "source": "/api/claims/:id(\\d+)",
+      "destination": "/api/claim?id=:id"
+    },
+    {
+      "source": "/a/:handle",
+      "destination": "/a.html"
+    }
   ],
   "functions": {
-    "api/**/*.js": { "maxDuration": 15 }
+    "api/**/*.js": {
+      "maxDuration": 15
+    }
   },
   "headers": [
     {
+      "source": "/desk/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        }
+      ]
+    },
+    {
       "source": "/api/(.*)",
       "headers": [
-        { "key": "Access-Control-Allow-Origin", "value": "*" },
-        { "key": "X-Content-Type-Options", "value": "nosniff" }
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        }
       ]
     },
     {
       "source": "/data/(.*)",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=0, s-maxage=60, stale-while-revalidate=300" },
-        { "key": "Access-Control-Allow-Origin", "value": "*" }
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, s-maxage=60, stale-while-revalidate=300"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        }
       ]
     },
     {
       "source": "/feed.atom",
-      "headers": [{ "key": "Content-Type", "value": "application/atom+xml; charset=utf-8" }]
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/atom+xml; charset=utf-8"
+        }
+      ]
     },
     {
       "source": "/join.txt",
-      "headers": [{ "key": "Content-Type", "value": "text/plain; charset=utf-8" }]
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "text/plain; charset=utf-8"
+        }
+      ]
     },
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        }
       ]
     }
-  ]
+  ],
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- . ':(exclude)units'"
 }
