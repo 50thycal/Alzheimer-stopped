@@ -8,8 +8,30 @@
   "proposed_status": "checked",
   "summary": "Checker test. CLARITY AD randomised 1,795 people with early Alzheimer's disease to lecanemab or placebo for 18 months. The primary endpoint, change in CDR-SB, differed by -0.45 points (about 27% less decline). The claim stands.",
   "evidence": [
-    { "type": "nct", "id": "NCT03887455", "role": "primary", "finding": "Registered phase 3 CLARITY AD trial of lecanemab; primary endpoint change from baseline in CDR-SB at 18 months." },
-    { "type": "pmid", "id": "36449413", "role": "primary", "finding": "van Dyck et al., NEJM 2023: adjusted mean difference in CDR-SB change of -0.45 versus placebo at 18 months." }
+    {
+      "type": "nct",
+      "id": "NCT03887455",
+      "role": "primary",
+      "finding": "Registered phase 3 CLARITY AD trial of lecanemab; primary endpoint change from baseline in CDR-SB at 18 months."
+    },
+    {
+      "type": "pmid",
+      "id": "99999999",
+      "role": "primary",
+      "finding": "van Dyck et al., NEJM 2023: adjusted mean difference in CDR-SB change of -0.45 versus placebo at 18 months."
+    },
+    {
+      "type": "nct",
+      "id": "NCT00000001",
+      "role": "supporting",
+      "finding": "A trial id that should not exist, to test rejection."
+    },
+    {
+      "type": "doi",
+      "id": "10.1038/nature04533",
+      "role": "supporting",
+      "finding": "The retracted 2006 Abeta*56 paper cited as support, which must be refused."
+    }
   ],
   "new_claims": []
 }
