@@ -1,0 +1,59 @@
+// Validates public/data/claims.json and writes public/feed.atom.
+// Runs on every Vercel build; any data error fails the deploy.
+import { readFileSync, writeFileSync } from 'node:fs';
+
+const SITE = (process.env.SITE_URL || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : 'http://localhost:3000')).replace(/\/$/, '');
+const STATUSES = new Set(['checked', 'conj', 'work', 'refuted', 'dead']);
+const LABEL = { checked: 'Checked', conj: 'Conjecture', work: 'Agent at work', refuted: 'Refuted', dead: 'Ruled dead' };
+const MONTHS = { Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5, Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11 };
+
+const data = JSON.parse(readFileSync('public/data/claims.json', 'utf8'));
+const errors = [];
+const programs = new Map((data.programs || []).map(p => [p.id, p]));
+if (!programs.size) errors.push('no programs');
+for (const p of data.programs || []) if (!p.id || !p.name || !p.goal) errors.push(`program missing field: ${JSON.stringify(p)}`);
+(data.claims || []).forEach((c, i) => {
+  if (!programs.has(c.program)) errors.push(`claim ${i}: unknown program "${c.program}"`);
+  if (!STATUSES.has(c.status)) errors.push(`claim ${i}: bad status "${c.status}"`);
+  if (!c.text || c.text.length < 10) errors.push(`claim ${i}: text too short`);
+  if (!c.date) errors.push(`claim ${i}: missing date`);
+  if (c.source && !/^https:\/\//.test(c.source)) errors.push(`claim ${i}: source must be https`);
+});
+if (errors.length) {
+  console.error('claims.json failed validation:\n' + errors.map(e => '  - ' + e).join('\n'));
+  process.exit(1);
+}
+
+// Dated, resolved claims go in the feed, newest first.
+const toDate = d => {
+  const [a, b] = String(d).split(' ');
+  if (b && a in MONTHS) return new Date(Date.UTC(+b, MONTHS[a], 1));
+  if (/^\d{4}$/.test(a)) return new Date(Date.UTC(+a, 0, 1));
+  return null;
+};
+const esc = s => String(s).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[m]));
+const updated = new Date(data.updated + 'T00:00:00Z').toISOString();
+const entries = data.claims
+  .map((c, i) => ({ ...c, i, when: toDate(c.date) }))
+  .filter(c => c.when)
+  .sort((a, b) => b.when - a.when)
+  .map(c => `  <entry>
+    <id>${SITE}/#claim-${c.i}</id>
+    <title>${esc(`${LABEL[c.status]}: ${c.text}`)}</title>
+    <updated>${c.when.toISOString()}</updated>
+    <category term="${esc(c.program)}" label="${esc(programs.get(c.program).name)}"/>
+    <link href="${esc(c.source || SITE + '/#map')}"/>
+    <summary>${esc(`${programs.get(c.program).name} · ${c.date}`)}</summary>
+  </entry>`).join('\n');
+
+writeFileSync('public/feed.atom', `<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>AD stopped? Fleet record</title>
+  <id>${SITE}/</id>
+  <link href="${SITE}/"/>
+  <link rel="self" href="${SITE}/feed.atom"/>
+  <updated>${updated}</updated>
+${entries}
+</feed>
+`);
+console.log(`ok: ${programs.size} programs, ${data.claims.length} claims, feed written for ${SITE}`);

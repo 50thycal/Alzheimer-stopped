@@ -1,0 +1,292 @@
+{
+ "updated": "2026-11-26",
+ "note": "Statuses reflect public results as of the updated date. Fleet counters and the live feed on the page are simulated until a real fleet writes here.",
+ "programs": [
+  {
+   "id": "amy",
+   "name": "Amyloid",
+   "goal": "Clear amyloid early enough to change the course of the disease."
+  },
+  {
+   "id": "tau",
+   "name": "Tau",
+   "goal": "Stop tau spreading between connected brain regions."
+  },
+  {
+   "id": "imm",
+   "name": "Immune",
+   "goal": "Turn microglia and inflammation from harmful to protective."
+  },
+  {
+   "id": "apoe",
+   "name": "APOE",
+   "goal": "Neutralise the biggest common genetic risk, APOE4."
+  },
+  {
+   "id": "vas",
+   "name": "Vascular",
+   "goal": "Protect blood flow, the blood-brain barrier and waste clearance."
+  },
+  {
+   "id": "met",
+   "name": "Metabolic",
+   "goal": "Fix how the ageing brain uses fuel."
+  },
+  {
+   "id": "inf",
+   "name": "Infection",
+   "goal": "Test whether viruses or bacteria help trigger the disease."
+  },
+  {
+   "id": "det",
+   "name": "Detection",
+   "goal": "Find the disease years earlier with a blood draw."
+  },
+  {
+   "id": "prev",
+   "name": "Prevention",
+   "goal": "Delay onset through risk factors anyone can change."
+  },
+  {
+   "id": "syn",
+   "name": "Synapse",
+   "goal": "Keep synapses working even with pathology present."
+  }
+ ],
+ "claims": [
+  {
+   "program": "amy",
+   "status": "checked",
+   "text": "Lecanemab slows decline in early Alzheimer's, about 27% on CDR-SB over 18 months (CLARITY AD); full FDA approval.",
+   "date": "Jul 2023",
+   "source": "https://clinicaltrials.gov/study/NCT03887455"
+  },
+  {
+   "program": "amy",
+   "status": "checked",
+   "text": "Donanemab slows decline in early symptomatic Alzheimer's (TRAILBLAZER-ALZ 2); FDA approval.",
+   "date": "Jul 2024",
+   "source": "https://clinicaltrials.gov/study/NCT04437511"
+  },
+  {
+   "program": "amy",
+   "status": "work",
+   "text": "Clearing amyloid before symptoms prevents them (AHEAD 3-45, TRAILBLAZER-ALZ 3 running).",
+   "date": "Ongoing"
+  },
+  {
+   "program": "amy",
+   "status": "refuted",
+   "text": "BACE inhibitors slow decline by cutting amyloid production; verubecestat and others failed, some worsened cognition.",
+   "date": "2018"
+  },
+  {
+   "program": "amy",
+   "status": "refuted",
+   "text": "Gamma-secretase inhibition slows decline; semagacestat worsened cognition and was halted.",
+   "date": "2010"
+  },
+  {
+   "program": "amy",
+   "status": "refuted",
+   "text": "Solanezumab prevents decline in preclinical Alzheimer's (A4 study missed).",
+   "date": "Mar 2023",
+   "source": "https://clinicaltrials.gov/study/NCT02008357"
+  },
+  {
+   "program": "amy",
+   "status": "refuted",
+   "text": "Gantenerumab slows decline in early Alzheimer's (GRADUATE I and II missed).",
+   "date": "Nov 2022"
+  },
+  {
+   "program": "amy",
+   "status": "dead",
+   "text": "Aducanumab gives clinical benefit; Biogen discontinued it after accelerated approval.",
+   "date": "Jan 2024"
+  },
+  {
+   "program": "amy",
+   "status": "dead",
+   "text": "Aβ*56 oligomer causes memory loss; the 2006 Nature paper was retracted.",
+   "date": "Jun 2024"
+  },
+  {
+   "program": "tau",
+   "status": "checked",
+   "text": "Tau PET spread tracks symptoms more closely than amyloid load.",
+   "date": "2016"
+  },
+  {
+   "program": "tau",
+   "status": "refuted",
+   "text": "N-terminal anti-tau antibodies slow decline (semorinemab, gosuranemab missed).",
+   "date": "2021"
+  },
+  {
+   "program": "tau",
+   "status": "work",
+   "text": "Lowering tau production with antisense (BIIB080) slows decline; phase 2 running.",
+   "date": "Ongoing"
+  },
+  {
+   "program": "tau",
+   "status": "conj",
+   "text": "Mid-domain antibodies block tau seeding between neurons.",
+   "date": "Open"
+  },
+  {
+   "program": "imm",
+   "status": "checked",
+   "text": "TREM2 variants raise Alzheimer's risk, implicating microglia.",
+   "date": "2013"
+  },
+  {
+   "program": "imm",
+   "status": "refuted",
+   "text": "TREM2 agonist antibody AL002 slows decline (INVOKE-2 missed).",
+   "date": "Nov 2024"
+  },
+  {
+   "program": "imm",
+   "status": "conj",
+   "text": "Systemic inflammation accelerates progression.",
+   "date": "Open"
+  },
+  {
+   "program": "apoe",
+   "status": "checked",
+   "text": "APOE4 homozygosity is a distinct genetic form of Alzheimer's, with near-complete pathology by 65.",
+   "date": "May 2024"
+  },
+  {
+   "program": "apoe",
+   "status": "checked",
+   "text": "APOE4 is the largest common genetic risk factor for late-onset Alzheimer's.",
+   "date": "1993"
+  },
+  {
+   "program": "apoe",
+   "status": "work",
+   "text": "APOE genotype stratifies ARIA risk before antibody dosing.",
+   "date": "Ongoing"
+  },
+  {
+   "program": "apoe",
+   "status": "conj",
+   "text": "The APOE Christchurch variant protects against early-onset disease (rare case reports).",
+   "date": "Open"
+  },
+  {
+   "program": "vas",
+   "status": "checked",
+   "text": "Intensive blood-pressure control lowers risk of mild cognitive impairment (SPRINT MIND).",
+   "date": "Jan 2019",
+   "source": "https://clinicaltrials.gov/study/NCT01206062"
+  },
+  {
+   "program": "vas",
+   "status": "work",
+   "text": "Blood-brain barrier breakdown in APOE4 carriers precedes decline; replication running.",
+   "date": "Ongoing"
+  },
+  {
+   "program": "vas",
+   "status": "conj",
+   "text": "Failing glymphatic clearance during sleep drives amyloid build-up.",
+   "date": "Open"
+  },
+  {
+   "program": "met",
+   "status": "refuted",
+   "text": "Oral semaglutide slows early Alzheimer's (EVOKE and EVOKE+ missed despite biomarker shifts).",
+   "date": "Nov 2025",
+   "source": "https://clinicaltrials.gov/study/NCT04777396"
+  },
+  {
+   "program": "met",
+   "status": "conj",
+   "text": "Brain insulin resistance drives the disease (\"type 3 diabetes\").",
+   "date": "Open"
+  },
+  {
+   "program": "met",
+   "status": "conj",
+   "text": "Ketone supply rescues glucose hypometabolism.",
+   "date": "Open"
+  },
+  {
+   "program": "inf",
+   "status": "work",
+   "text": "Shingles vaccination lowers dementia risk (Wales natural experiment); replication running.",
+   "date": "Ongoing"
+  },
+  {
+   "program": "inf",
+   "status": "refuted",
+   "text": "Gingipain inhibitor atuzaginstat slows decline (GAIN missed co-primary endpoints).",
+   "date": "Oct 2021"
+  },
+  {
+   "program": "inf",
+   "status": "conj",
+   "text": "HSV-1 reactivation seeds amyloid as an antimicrobial response.",
+   "date": "Open"
+  },
+  {
+   "program": "det",
+   "status": "checked",
+   "text": "Plasma pTau217/Aβ42 ratio detects amyloid; Lumipulse cleared by FDA.",
+   "date": "May 2025",
+   "source": "https://www.fda.gov/news-events/press-announcements/fda-clears-first-blood-test-used-diagnosing-alzheimers-disease"
+  },
+  {
+   "program": "det",
+   "status": "checked",
+   "text": "Single-biomarker plasma pTau217 rules amyloid in or out; Elecsys cleared by FDA.",
+   "date": "Aug 2026"
+  },
+  {
+   "program": "det",
+   "status": "checked",
+   "text": "Amyloid changes begin 15 to 20 years before symptoms (DIAN).",
+   "date": "2012"
+  },
+  {
+   "program": "det",
+   "status": "work",
+   "text": "Blood tests can screen symptom-free adults (not cleared for this use).",
+   "date": "Ongoing"
+  },
+  {
+   "program": "prev",
+   "status": "checked",
+   "text": "14 modifiable risk factors account for about 45% of dementia (Lancet Commission).",
+   "date": "Jul 2024"
+  },
+  {
+   "program": "prev",
+   "status": "work",
+   "text": "A structured multidomain lifestyle programme slows decline (US POINTER); replication running.",
+   "date": "Ongoing"
+  },
+  {
+   "program": "prev",
+   "status": "conj",
+   "text": "Hearing aids slow decline in higher-risk older adults (ACHIEVE subgroup only).",
+   "date": "Open"
+  },
+  {
+   "program": "syn",
+   "status": "dead",
+   "text": "Simufilam restores filamin A and slows decline; ReThink-ALZ failed and the programme ended.",
+   "date": "Nov 2024"
+  },
+  {
+   "program": "syn",
+   "status": "conj",
+   "text": "Synaptic resilience explains why some people with plaques never develop dementia.",
+   "date": "Open"
+  }
+ ]
+}

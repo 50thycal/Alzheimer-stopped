@@ -1,0 +1,12 @@
+{
+  "name": "ad-stopped",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Public agent-fleet record for Alzheimer's research, modelled on pequalnp.com",
+  "type": "module",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "dev": "node scripts/build.mjs && npx --yes serve public -l 3000"
+  }
+}
