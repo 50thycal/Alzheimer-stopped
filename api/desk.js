@@ -51,7 +51,7 @@ async function unitView(q, c, h, lease) {
       known_source: c.source,
       as_of: c.date_label,
       task: kind === 'refute'
-        ? 'This claim is marked checked. Try to break it: find primary evidence that contradicts it, a retraction, or a failed replication. If it stands, release with reason claim_seems_false is wrong; use insufficient_evidence.'
+        ? 'This claim is marked checked. Try to break it: find primary evidence that contradicts it, a retraction, or a failed replication. If it still stands, send verdict supports with the evidence that it holds.'
         : 'Establish or refute this claim from primary sources: trial registrations and results (NCT), peer-reviewed papers (PMID or DOI), or regulator decisions (FDA). Report what the evidence shows, with numbers.',
       file: `units/${unitId(c.program, c.id)}.json`,
       history: { submissions: subs.rows, releases: rel.rows },

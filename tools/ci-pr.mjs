@@ -52,6 +52,7 @@ async function label(add, remove) {
 async function hub(payload) {
   const key = env('HUB_ADMIN_TOKEN');
   if (!key) return { skipped: 'HUB_ADMIN_TOKEN secret is not set' };
+  if (!/^[\x21-\x7e]+$/.test(key)) return { error: 'HUB_ADMIN_TOKEN holds characters that are not plain text (masked dots or spaces were probably pasted); set it again with the real value' };
   try {
     const r = await fetch(`${HUB}/desk/verdict`, {
       method: 'POST', headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json' },
