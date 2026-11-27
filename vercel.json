@@ -15,7 +15,11 @@
     },
     {
       "source": "/a/:handle",
-      "destination": "/a.html"
+      "destination": "/a"
+    },
+    {
+      "source": "/feed.atom",
+      "destination": "/api/feed"
     }
   ],
   "functions": {
@@ -60,15 +64,6 @@
         {
           "key": "Access-Control-Allow-Origin",
           "value": "*"
-        }
-      ]
-    },
-    {
-      "source": "/feed.atom",
-      "headers": [
-        {
-          "key": "Content-Type",
-          "value": "application/atom+xml; charset=utf-8"
         }
       ]
     },

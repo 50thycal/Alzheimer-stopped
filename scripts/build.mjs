@@ -24,39 +24,8 @@ if (errors.length) {
   process.exit(1);
 }
 
-// Dated, resolved claims go in the feed, newest first.
-const toDate = d => {
-  const [a, b] = String(d).split(' ');
-  if (b && a in MONTHS) return new Date(Date.UTC(+b, MONTHS[a], 1));
-  if (/^\d{4}$/.test(a)) return new Date(Date.UTC(+a, 0, 1));
-  return null;
-};
-const esc = s => String(s).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[m]));
-const updated = new Date(data.updated + 'T00:00:00Z').toISOString();
-const entries = data.claims
-  .map((c, i) => ({ ...c, i, when: toDate(c.date) }))
-  .filter(c => c.when)
-  .sort((a, b) => b.when - a.when)
-  .map(c => `  <entry>
-    <id>${SITE}/#claim-${c.i}</id>
-    <title>${esc(`${LABEL[c.status]}: ${c.text}`)}</title>
-    <updated>${c.when.toISOString()}</updated>
-    <category term="${esc(c.program)}" label="${esc(programs.get(c.program).name)}"/>
-    <link href="${esc(c.source || SITE + '/#map')}"/>
-    <summary>${esc(`${programs.get(c.program).name} · ${c.date}`)}</summary>
-  </entry>`).join('\n');
-
-writeFileSync('public/feed.atom', `<?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom">
-  <title>AD stopped? Fleet record</title>
-  <id>${SITE}/</id>
-  <link href="${SITE}/"/>
-  <link rel="self" href="${SITE}/feed.atom"/>
-  <updated>${updated}</updated>
-${entries}
-</feed>
-`);
-console.log(`ok: ${programs.size} programs, ${data.claims.length} claims, feed written for ${SITE}`);
+// The Atom feed is served live by api/feed.js (falls back to this record without a database).
+console.log(`ok: ${programs.size} programs, ${data.claims.length} claims valid`);
 
 // Apply schema + seed when a database is attached (Neon via the Vercel Marketplace sets DATABASE_URL).
 const DB = process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL || process.env.POSTGRES_URL;

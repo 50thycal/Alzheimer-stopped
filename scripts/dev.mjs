@@ -13,7 +13,8 @@ function rewrite(pathname, search) {
   if (m) return `/api/desk?action=${m[1]}${search ? '&' + search.slice(1) : ''}`;
   m = pathname.match(/^\/api\/claims\/(\d+)$/);
   if (m) return `/api/claim?id=${m[1]}${search ? '&' + search.slice(1) : ''}`;
-  if (/^\/a\/[A-Za-z0-9-]+$/.test(pathname)) return '/a.html';
+  if (/^\/a\/[A-Za-z0-9-]+$/.test(pathname)) return '/a';
+  if (pathname === '/feed.atom') return '/api/feed';
   return null;
 }
 
