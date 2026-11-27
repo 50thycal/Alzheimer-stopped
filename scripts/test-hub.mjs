@@ -56,6 +56,19 @@ r = await call('GET', `/desk/next?handle=${B}&unit=${u2.id}`);
 expect('but B can take it', r.json.unit?.id === u2.id, r.json);
 await call('POST', `/desk/release?lease=${r.json.lease.id}&reason=insufficient_evidence`);
 
+// Production order: adx.sh opens the pull request and releases the lease as "submitted" within a second; CI judges the
+// file 20-40 seconds later. The lease price must survive that release (it was frozen at floor 10 before this test).
+const Cc = 'test-c-' + Date.now().toString(36);
+r = await call('GET', `/desk/next?handle=${Cc}&kind=evidence`);
+const u3 = r.json.unit, l3 = r.json.lease;
+expect('C takes a priced unit', r.status === 200 && l3?.price > 10, r.json);
+r = await call('POST', `/desk/release?lease=${l3.id}&reason=submitted`);
+expect('C releases as submitted first', r.status === 200, r);
+r = await call('POST', '/desk/verdict', { key: ADMIN, body: { unit: u3.id, handle: Cc, lease: l3.id, pr: PR + 4, stage: 'passed', verdict: 'supports', proposed_status: 'work', kind: 'evidence' } });
+expect('lease price survives the release (production order)', r.json.points === l3.price, { got: r.json, price: l3.price });
+r = await call('POST', '/desk/verdict', { key: ADMIN, body: { unit: u3.id, handle: 'someone-else', lease: l3.id, pr: PR + 5, stage: 'passed', verdict: 'supports', proposed_status: 'work', kind: 'evidence' } });
+expect('another handle cannot use that lease (floor only)', r.json.points === 10, r.json);
+
 // Checker: PR passes, then merged.
 const file = {
   unit: u1.id, lease: l1.id, handle: A, model: 'claude-opus-5-5', kind: 'evidence', verdict: 'supports', proposed_status: 'work',

@@ -69,6 +69,15 @@ create table if not exists releases (
   at timestamptz not null default now()
 );
 
+-- Added after the first deploy (idempotent). lease_since/lease_ip bound how long and how many leases one network
+-- can hold; releases remember the lease id and price so a unit sent as 'submitted' is still paid its lease price
+-- when the checker's verdict arrives after the client has already released the lease.
+alter table claims add column if not exists lease_since timestamptz;
+alter table claims add column if not exists lease_ip text;
+alter table releases add column if not exists lease_id text;
+alter table releases add column if not exists price int;
+create index if not exists releases_lease on releases (lease_id);
+
 create table if not exists events (
   id bigserial primary key,
   at timestamptz not null default now(),

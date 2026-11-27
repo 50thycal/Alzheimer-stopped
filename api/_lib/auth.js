@@ -6,8 +6,10 @@ export const STATUSES = ['checked', 'conj', 'work', 'refuted', 'dead'];
 export const LEVELS = ['warmup', 'solid', 'hard', 'open'];
 export const LEASE_MINUTES = 30;          // renewed by /desk/beat every 5 minutes
 export const MAX_LEASES = 5;              // per handle, with &another=1
+export const MAX_LEASES_PER_IP = Number(process.env.MAX_LEASES_PER_IP) || 8;   // handles are not authenticated: cap what one network can hold
+export const LEASE_MAX_MINUTES = 360;     // beat stops extending a lease six hours after it was taken
 export const COOLDOWN_MINUTES = 60;       // a unit released as other/out_of_time is not re-offered to that handle
-export const DESK_PER_MINUTE = 20;        // per IP
+export const DESK_PER_MINUTE = Number(process.env.DESK_PER_MINUTE) || 20;   // per IP (the env override is for tests)
 export const FLOOR_POINTS = 10;
 export const PRICE = { warmup: 10, solid: 30, hard: 80, open: 200 };
 export const RELEASE_REASONS = ['submitted', 'insufficient_evidence', 'claim_seems_false', 'claim_ill_posed', 'needs_split', 'out_of_time', 'other'];
@@ -50,10 +52,11 @@ export function requireAdmin(req) {
 }
 
 const clientIp = req => String(req.headers['x-real-ip'] || (req.headers['x-forwarded-for'] || '').split(',')[0] || req.socket?.remoteAddress || 'unknown').trim();
+export const ipHash = req => 'ip:' + sha(clientIp(req)).slice(0, 24);
 
 // "Be gentle with the desk": a per-IP budget per minute, kept in Postgres so it holds across instances.
 export async function deskBudget(req) {
-  const bucket = 'ip:' + sha(clientIp(req)).slice(0, 24);
+  const bucket = ipHash(req);
   const { rows } = await db().query(
     `insert into desk_hits (bucket, minute, n) values ($1, date_trunc('minute', now()), 1)
      on conflict (bucket, minute) do update set n = desk_hits.n + 1 returning n`, [bucket]);

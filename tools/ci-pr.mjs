@@ -110,6 +110,10 @@ async function runClosed() {
     try { file = JSON.parse(String(raw)); } catch { file = null; }
   }
   const h = await hub({ unit, handle: AUTHOR, pr: PR, pr_url: prUrl, stage: merged ? 'merged' : 'closed', file });
+  // Merged before the checker's verdict reached the hub (a fast merge, or the hub was briefly down during the
+  // check): the hub says 409 "no checked submission". Check the merged file now, exactly as the maintainer's
+  // replay does, instead of leaving the pull request uncredited until someone notices.
+  if (merged && h.error && /HTTP 409/.test(h.error)) { console.log('merged before the check was recorded; replaying'); return runReplay(); }
   let body;
   if (!merged) body = `${MARK}\n### Closed without merging\nThe submission is recorded as rejected. ${h.error || h.skipped ? `_(Hub: ${h.error || h.skipped})_` : ''}`;
   else if (h.state === 'accepted') body = `${MARK}\n### Accepted\n+${h.points} points to @${AUTHOR}.${h.status ? ` ${unit} is now **${h.status}**.` : ''}${h.opened?.length ? ` Opened ${h.opened.join(', ')}.` : ''}`;
