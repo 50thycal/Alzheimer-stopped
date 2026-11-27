@@ -96,7 +96,7 @@ create index if not exists claims_open on claims (status, lease_until);
 const seedLevel = c => (c.status === 'checked' ? 'hard' : c.status === 'conj' ? 'solid' : c.status === 'work' ? 'solid' : 'warmup');
 
 export async function migrate(connectionString, seedPath = 'public/data/claims.json') {
-  const client = new pg.Client({ connectionString });
+  const client = new pg.Client({ connectionString: connectionString.replace(/([?&])sslmode=(prefer|require|verify-ca)(?=&|$)/, '$1sslmode=verify-full') });
   await client.connect();
   try {
     await client.query('begin');

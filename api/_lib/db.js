@@ -2,7 +2,9 @@ import pg from 'pg';
 
 let pool;
 
-export const dbUrl = () => process.env.DATABASE_URL || process.env.POSTGRES_URL || '';
+// pg treats sslmode=require as verify-full and warns about it; ask for verify-full explicitly (Neon's certificates verify).
+export const strictSsl = url => url.replace(/([?&])sslmode=(prefer|require|verify-ca)(?=&|$)/, '$1sslmode=verify-full');
+export const dbUrl = () => strictSsl(process.env.DATABASE_URL || process.env.POSTGRES_URL || '');
 export const hasDb = () => !!dbUrl();
 
 // One small pool per warm function instance. Use the pooled Neon URL in production.
