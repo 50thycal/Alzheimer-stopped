@@ -1,0 +1,35 @@
+# Maintainer tool: re-record a unit pull request on the hub (after the hub was down or HUB_ADMIN_TOKEN was wrong).
+# Actions tab -> replay-unit -> Run workflow -> enter the pull request number.
+name: replay-unit
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: Pull request number
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Replay
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HUB_ADMIN_TOKEN: ${{ secrets.HUB_ADMIN_TOKEN }}
+          HUB: ${{ vars.HUB_URL }}
+          PR_NUMBER: ${{ inputs.pr }}
+        run: node tools/ci-pr.mjs replay

@@ -74,6 +74,8 @@ r = await call('POST', '/desk/verdict', { key: ADMIN, body: { unit: u1.id, handl
 expect('merge without a passed check refused', r.status === 409, r);
 r = await call('POST', '/desk/verdict', { key: ADMIN, body: { unit: u1.id, handle: A, pr: PR + 1, stage: 'merged', file } });
 expect('merge accepts: points, status, new claim', r.status === 200 && r.json.state === 'accepted' && r.json.status === 'work' && r.json.opened.length === 1, r.json);
+r = await call('POST', '/desk/verdict', { key: ADMIN, body: { unit: u1.id, handle: A, lease: l1.id, pr: PR + 1, stage: 'passed', verdict: 'supports', proposed_status: 'work' } });
+expect('a late re-check cannot reopen an accepted PR', r.json.state === 'accepted' && r.json.note === 'already decided', r.json);
 r = await call('POST', '/desk/verdict', { key: ADMIN, body: { unit: u1.id, handle: A, pr: PR + 1, stage: 'merged', file } });
 expect('second merge is idempotent', r.status === 200 && r.json.note === 'already decided', r.json);
 

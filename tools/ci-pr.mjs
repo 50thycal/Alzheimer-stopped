@@ -9,7 +9,7 @@ import { check, markdown } from './check-unit.mjs';
 const env = k => process.env[k] || '';
 const REPO = env('GITHUB_REPOSITORY');
 const PR = Number(env('PR_NUMBER'));
-const AUTHOR = env('PR_AUTHOR');
+let AUTHOR = env('PR_AUTHOR');
 const HUB = (env('HUB') || 'https://alzheimer-stopped.vercel.app').replace(/\/$/, '');
 const TOKEN = env('GITHUB_TOKEN');
 const PATH_RE = /^units\/C-[a-z]{2,8}-\d{1,7}\.json$/;
@@ -118,7 +118,39 @@ async function runClosed() {
   console.log(JSON.stringify(h));
 }
 
+// Replay: re-record a pull request on the hub after it was down or its token was wrong.
+// A merged PR is checked again from the merged file, then recorded as passed and merged.
+async function runReplay() {
+  const pr = await gh('GET', `/repos/${REPO}/pulls/${PR}`);
+  if (!pr) throw new Error(`no pull request #${PR}`);
+  AUTHOR = pr.user.login;
+  if (!pr.merged) {
+    if (pr.state === 'open') { process.env.HEAD_REPO = pr.head.repo.full_name; process.env.HEAD_SHA = pr.head.sha; return runCheck(); }
+    console.log('closed without merging: nothing to replay'); return;
+  }
+  const files = await prFiles();
+  const f = files.length === 1 && PATH_RE.test(files[0].filename) ? files[0] : null;
+  if (!f) { console.log('not a unit pull request'); return; }
+  const raw = await gh('GET', `/repos/${REPO}/contents/${f.filename}?ref=${pr.merge_commit_sha}`, null, 'application/vnd.github.raw+json');
+  const rep = await check(String(raw), { path: f.filename, author: AUTHOR, hub: HUB });
+  if (rep.state !== 'PASSED') { console.log(`the merged file does not pass now (${rep.state}: ${rep.summary_line}); not credited`); process.exit(1); }
+  const passed = await hub({
+    unit: rep.unit, handle: AUTHOR, lease: rep.lease || null, pr: PR, pr_url: prUrl, stage: 'passed',
+    kind: rep.kind, verdict: rep.verdict, proposed_status: rep.proposed_status,
+    report: { summary_line: rep.summary_line, errors: rep.errors, warnings: rep.warnings, items: rep.items.map(({ type, id, role, found, retracted, title, detail }) => ({ type, id, role, found, retracted, title: (title || '').slice(0, 200), detail })) }
+  });
+  if (passed.error || passed.skipped) throw new Error(passed.error || passed.skipped);
+  let file = null; try { file = JSON.parse(String(raw)); } catch {}
+  const h = await hub({ unit: rep.unit, handle: AUTHOR, pr: PR, pr_url: prUrl, stage: 'merged', file });
+  if (h.error || h.skipped) throw new Error(h.error || h.skipped);
+  const body = h.state === 'accepted'
+    ? `${MARK}\n### Accepted (replayed)\n+${h.points} points to @${AUTHOR}.${h.status ? ` ${rep.unit} is now **${h.status}**.` : ''}${h.opened?.length ? ` Opened ${h.opened.join(', ')}.` : ''}`
+    : `${MARK}\n### Replayed\n${h.note || h.state}`;
+  await gh('POST', `/repos/${REPO}/issues/${PR}/comments`, { body });
+  console.log(JSON.stringify(h));
+}
+
 const mode = process.argv[2];
-if (!REPO || !PR || !AUTHOR || !TOKEN) { console.error('missing GitHub context'); process.exit(2); }
-(mode === 'check' ? runCheck() : mode === 'closed' ? runClosed() : Promise.reject(new Error('mode is check or closed')))
+if (!REPO || !PR || !TOKEN || (mode !== 'replay' && !AUTHOR)) { console.error('missing GitHub context'); process.exit(2); }
+(mode === 'check' ? runCheck() : mode === 'closed' ? runClosed() : mode === 'replay' ? runReplay() : Promise.reject(new Error('mode is check, closed or replay')))
   .catch(e => { console.error(e.message); process.exit(2); });

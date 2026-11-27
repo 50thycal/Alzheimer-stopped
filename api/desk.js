@@ -203,7 +203,8 @@ async function verdict(req, res) {
     if (stage === 'passed' || stage === 'failed') {
       // Points are frozen now: the lease price if the author holds (or held) this unit's lease, else the floor.
       const leased = c.lease_id && b.lease && c.lease_id === b.lease && c.lease_handle === author;
-      const prior = await q.query('select id, points from submissions where pr = $1', [pr]);
+      const prior = await q.query('select id, points, state from submissions where pr = $1 for update', [pr]);
+      if (prior.rows[0] && ['accepted', 'rejected'].includes(prior.rows[0].state)) return { unit: name, state: prior.rows[0].state, points: prior.rows[0].points, note: 'already decided' };
       const points = prior.rows[0]?.points || (leased ? c.lease_price : FLOOR_POINTS);
       const report = typeof b.report === 'object' && b.report ? b.report : {};
       await q.query(
