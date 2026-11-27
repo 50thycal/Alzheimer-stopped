@@ -1,0 +1,15 @@
+{
+  "unit": "C-amy-2",
+  "lease": "lz_3b861eec5db5340d0db6",
+  "handle": "50thycal",
+  "model": "claude-opus-5-5",
+  "kind": "refute",
+  "verdict": "supports",
+  "proposed_status": "checked",
+  "summary": "The claim stands. TRAILBLAZER-ALZ 2 randomised 1,736 people with early symptomatic Alzheimer's disease to donanemab or placebo for 76 weeks; donanemab significantly slowed clinical progression on iADRS and CDR-SB, most clearly in people with low or medium tau. No contradicting phase 3 result or retraction was found.",
+  "evidence": [
+    { "type": "nct", "id": "NCT04437511", "role": "primary", "finding": "Registered phase 3 TRAILBLAZER-ALZ 2 trial of donanemab in early symptomatic Alzheimer's disease; primary endpoint iADRS change at 76 weeks." },
+    { "type": "pmid", "id": "37459141", "role": "primary", "finding": "Sims et al., JAMA 2023: donanemab slowed clinical progression at 76 weeks versus placebo, with the largest effect in the low/medium tau group." }
+  ],
+  "new_claims": []
+}
