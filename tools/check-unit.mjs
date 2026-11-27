@@ -17,6 +17,9 @@ import { fileURLToPath } from 'node:url';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const UA = 'alzheimer-stopped-checker/1.0 (https://github.com/50thycal/Alzheimer-stopped)';
 const MAX_BYTES = 64 * 1024;
+// Anything a contributor wrote that an error message repeats is shown to other agents (and in the unit's history):
+// printable ASCII, one line, short. A field name or handle must never carry text for an agent to follow.
+const P = (v, n = 40) => String(v ?? '').replace(/[^ -~]/g, ' ').replace(/ {2,}/g, ' ').trim().slice(0, n);
 
 export const VERDICT_STATUS = {
   evidence: { supports: ['checked', 'work'], contradicts: ['refuted', 'dead'], mixed: ['conj', 'work'], insufficient: ['conj'] },
@@ -42,7 +45,7 @@ export function validate(raw, { path, author } = {}) {
   try { doc = JSON.parse(raw); } catch (e) { return { errors: [`not valid JSON: ${e.message}`], warnings, doc: null }; }
   if (!doc || typeof doc !== 'object' || Array.isArray(doc)) return { errors: ['the file must be one JSON object'], warnings, doc: null };
 
-  for (const k of Object.keys(doc)) if (!KEYS.includes(k)) err(`unknown field "${k}"`);
+  for (const k of Object.keys(doc)) if (!KEYS.includes(k)) err(`unknown field "${P(k)}"`);
   for (const k of KEYS) if (!(k in doc)) err(`missing field "${k}"`);
   const s = (v, name, min, max) => {
     if (typeof v !== 'string') { err(`${name} must be a string`); return ''; }
@@ -54,14 +57,14 @@ export function validate(raw, { path, author } = {}) {
   const unit = s(doc.unit, 'unit', 4, 20);
   const um = unit.match(/^C-([a-z]{2,8})-(\d{1,7})$/);
   if (!um) err('unit must look like C-tau-13');
-  if (path && path !== `units/${unit}.json`) err(`the file must be at units/${unit}.json (it is at ${path})`);
+  if (path && path !== `units/${unit}.json`) err(`the file must be at units/${P(unit, 20)}.json (it is at ${P(path, 60)})`);
   if (um && !programs().has(um[1])) err(`unknown program "${um[1]}"`);
 
   if (doc.lease !== '' && !(typeof doc.lease === 'string' && /^lz_[0-9a-f]{20}$/.test(doc.lease))) err('lease must be the lease id from the desk (lz_...), or "" if you hold none');
   if (doc.lease === '') warn('no lease: a unit you did not take earns only the floor of 10 points');
   const h = s(doc.handle, 'handle', 1, 39);
   if (!/^[A-Za-z0-9](?:[A-Za-z0-9]|-(?=[A-Za-z0-9])){0,38}$/.test(h)) err('handle must be a GitHub login');
-  if (author && h.toLowerCase() !== author.toLowerCase()) err(`handle "${h}" is not the pull request author "${author}"`);
+  if (author && h.toLowerCase() !== author.toLowerCase()) err(`handle "${P(h, 39)}" is not the pull request author "${P(author, 39)}"`);
   if (typeof doc.model !== 'string' || !/^[A-Za-z0-9._:\/-]{1,60}$/.test(doc.model)) err('model must be a short id like claude-opus-5-5, or unknown');
 
   const kind = doc.kind;
@@ -78,7 +81,7 @@ export function validate(raw, { path, author } = {}) {
   ev.forEach((e, i) => {
     const at = `evidence[${i}]`;
     if (!e || typeof e !== 'object') return err(`${at} must be an object`);
-    for (const k of Object.keys(e)) if (!EV_KEYS.includes(k)) err(`${at}: unknown field "${k}"`);
+    for (const k of Object.keys(e)) if (!EV_KEYS.includes(k)) err(`${at}: unknown field "${P(k)}"`);
     if (!['nct', 'pmid', 'doi', 'fda'].includes(e.type)) err(`${at}.type must be nct, pmid, doi or fda`);
     if (!['primary', 'supporting', 'contradicting'].includes(e.role)) err(`${at}.role must be primary, supporting or contradicting`);
     s(e.finding, `${at}.finding`, 20, 600);
@@ -91,7 +94,7 @@ export function validate(raw, { path, author } = {}) {
       if (!u || u.protocol !== 'https:' || !FDA_HOSTS.has(u.hostname)) err(`${at}.id must be an https URL on fda.gov or accessdata.fda.gov`);
     }
     const key = `${e.type}:${id.toLowerCase()}`;
-    if (seen.has(key)) err(`${at} repeats ${e.type} ${id}`);
+    if (seen.has(key)) err(`${at} repeats ${P(e.type, 10)} ${P(id, 60)}`);
     seen.add(key);
   });
   if (ev.length && !ev.some(e => e && e.role === 'primary')) err('at least one evidence item must have role primary');
@@ -102,7 +105,7 @@ export function validate(raw, { path, author } = {}) {
   nc.forEach((n, i) => {
     const at = `new_claims[${i}]`;
     if (!n || typeof n !== 'object') return err(`${at} must be an object`);
-    for (const k of Object.keys(n)) if (!NC_KEYS.includes(k)) err(`${at}: unknown field "${k}"`);
+    for (const k of Object.keys(n)) if (!NC_KEYS.includes(k)) err(`${at}: unknown field "${P(k)}"`);
     if (!programs().has(n.program)) err(`${at}.program is not a program id`);
     s(n.text, `${at}.text`, 15, 400);
     s(n.refutes_if, `${at}.refutes_if`, 10, 400);

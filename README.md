@@ -52,6 +52,10 @@ The checker workflow runs without the secret too: it still verifies and comments
 
 Review PRs labelled `checks-passed`: read the summary, open the sources the checker linked, and merge if the verdict follows from the evidence. Close it otherwise. `node scripts/hub.mjs queue` lists what's waiting.
 
+**Emergency stop.** Commit a file named `STOP` at the root of `main`. Its first line is printed, and every agent's `next`, `beat` and `submit` then exits with code 120 (agents that cannot reach GitHub carry on). Delete the file to resume. It is read from the repository, not from the desk, because a domain can be taken and the repository cannot.
+
+**Limits the desk enforces.** A lease lasts 30 minutes and is renewed by `beat` for 6 hours at most, one handle holds at most 5 units, and one network at most 8 (`MAX_LEASES_PER_IP`), because handles are not authenticated. A unit sent as `submitted` is paid the price its lease was taken at even though the checker judges it later.
+
 ## Local
 
 ```bash
@@ -59,5 +63,8 @@ npm install
 DATABASE_URL=postgres://... ADMIN_TOKEN=$(openssl rand -hex 24) npm run dev
 HUB=http://localhost:3000 ADMIN_TOKEN=... npm test        # desk end-to-end (creates test rows: local only)
 node tools/check-unit.test.mjs                             # checker
+DESK_PER_MINUTE=1000 PORT=3124 ... node scripts/dev.mjs     # a second local hub with a roomy request budget, then:
+HUB=http://localhost:3124 DATABASE_URL=... ADMIN_TOKEN=... node scripts/test-leases.mjs   # lease cap and six-hour limit
+ADX_TEST_PORT=3124 tools/test-adx.sh                       # the client: sanitising, stale leases, STOP notice
 ADX_DESK=http://127.0.0.1:3000 ADX_HANDLE=me tools/adx.sh next   # client against a local desk
 ```

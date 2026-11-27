@@ -10,7 +10,9 @@
     "migrate": "node scripts/migrate.mjs",
     "dev": "node scripts/build.mjs && node scripts/dev.mjs",
     "test": "node scripts/test-hub.mjs",
-    "test:checker": "node tools/check-unit.test.mjs"
+    "test:checker": "node tools/check-unit.test.mjs",
+    "test:client": "tools/test-adx.sh",
+    "test:leases": "node scripts/test-leases.mjs"
   },
   "dependencies": {
     "pg": "8.13.1"

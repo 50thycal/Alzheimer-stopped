@@ -5,15 +5,17 @@
 //   GET  /desk/unit?id=C-tau-13            is it still open?
 //   POST /desk/verdict          (admin)    the checker workflow reports pull request outcomes here
 import { db, tx, event } from './_lib/db.js';
-import { route, send, body, str, oneOf, HttpError } from './_lib/http.js';
+import { route, send, body, str, oneOf, plain, HttpError } from './_lib/http.js';
 import {
-  handle, model, parseUnit, unitId, kindFor, priceFor, newLeaseId, deskBudget, requireAdmin,
-  LEASE_MINUTES, MAX_LEASES, COOLDOWN_MINUTES, FLOOR_POINTS, LEVELS, RELEASE_REASONS, STATUSES
+  handle, model, parseUnit, unitId, kindFor, priceFor, newLeaseId, deskBudget, ipHash, requireAdmin,
+  LEASE_MINUTES, LEASE_MAX_MINUTES, MAX_LEASES, MAX_LEASES_PER_IP, COOLDOWN_MINUTES, FLOOR_POINTS, LEVELS, RELEASE_REASONS, STATUSES
 } from './_lib/auth.js';
 import { monthLabel } from './_lib/claims.js';
 
 const REPO = process.env.UNITS_REPO || '50thycal/Alzheimer-stopped';
 const NOSTORE = { 'cache-control': 'no-store' };
+// Every lease column, cleared together whenever a unit stops being held.
+const CLEAR_LEASE = 'lease_id = null, lease_handle = null, lease_model = null, lease_price = null, lease_kind = null, lease_until = null, lease_since = null, lease_ip = null';
 
 const template = (c, lease, h, kind) => ({
   unit: unitId(c.program, c.id),
@@ -54,7 +56,8 @@ async function unitView(q, c, h, lease) {
         ? 'This claim is marked checked. Try to break it: find primary evidence that contradicts it, a retraction, or a failed replication. If it still stands, send verdict supports with the evidence that it holds.'
         : 'Establish or refute this claim from primary sources: trial registrations and results (NCT), peer-reviewed papers (PMID or DOI), or regulator decisions (FDA). Report what the evidence shows, with numbers.',
       file: `units/${unitId(c.program, c.id)}.json`,
-      history: { submissions: subs.rows, releases: rel.rows },
+      // `note` is checker text derived from a contributor's file: other agents read it, so it is plain ASCII, capped.
+      history: { submissions: subs.rows.map(s => ({ ...s, note: plain(s.note, 160) })), releases: rel.rows },
       template: template(c, lease, h, kind)
     },
     lease: { id: lease.id, handle: h, until: lease.until, price: lease.price, minutes: LEASE_MINUTES, beat_every_s: 300 },
@@ -88,6 +91,11 @@ async function next(req, res, url) {
       return { ...(await unitView(q, c, h, { id: c.lease_id, until: c.lease_until, price: c.lease_price, model: c.lease_model })), note: 'You already hold this unit. Finish or release it, or ask with &another=1.' };
     }
     if (held.rows.length >= MAX_LEASES) throw new HttpError(409, `you hold ${MAX_LEASES} units already; submit or release one first`);
+    // A handle is not proof of anyone, so one network may only hold so many units at once (stops one script
+    // from leasing the whole desk under invented handles).
+    const ip = ipHash(req);
+    const ipHeld = await q.query('select count(*)::int as n from claims where lease_ip = $1 and lease_until > now()', [ip]);
+    if (ipHeld.rows[0].n >= MAX_LEASES_PER_IP) throw new HttpError(429, `this network already holds ${MAX_LEASES_PER_IP} units; submit or release some first`, { retry_after_s: 300 });
 
     const pick = await q.query(
       `select c.* from claims c
@@ -104,8 +112,8 @@ async function next(req, res, url) {
     const lease = { id: newLeaseId(), price: priceFor(c.level, kind), model: m };
     const upd = await q.query(
       `update claims set lease_id = $1, lease_handle = $2, lease_model = $3, lease_price = $4, lease_kind = $5,
-         lease_until = now() + make_interval(mins => $6::int) where id = $7 returning *`,
-      [lease.id, h, m, lease.price, kind, LEASE_MINUTES, c.id]);
+         lease_until = now() + make_interval(mins => $6::int), lease_since = now(), lease_ip = $8 where id = $7 returning *`,
+      [lease.id, h, m, lease.price, kind, LEASE_MINUTES, c.id, ip]);
     lease.until = upd.rows[0].lease_until;
     await event(q, { handle: h, claim: c.id, type: 'unit_taken', message: `${h} took ${unitId(c.program, c.id)} (${kind}, ${lease.price} points).` });
     return unitView(q, upd.rows[0], h, lease);
@@ -122,13 +130,20 @@ async function beat(req, res, url) {
     const c = r.rows[0];
     if (!c) throw new HttpError(410, 'this lease was released, settled or taken over', { withdrawn: true });
     if (c.status === 'dead') {
-      await q.query('update claims set lease_id = null, lease_handle = null, lease_until = null where id = $1', [c.id]);
-      throw new HttpError(410, 'the unit was ruled dead', { withdrawn: true });
+      // Returned, not thrown: a throw would roll the clearing back.
+      await q.query(`update claims set ${CLEAR_LEASE} where id = $1`, [c.id]);
+      return { stop: { status: 410, message: 'the unit was ruled dead', extra: { withdrawn: true } } };
     }
+    // A lease is renewed for six hours at most. It is NOT cleared here: it simply lapses, so a finished proof
+    // can still be sent and released as submitted (and keep its price). `withdrawn` stays false: this is not a
+    // withdrawal, the agent just has to take the unit again.
+    const tooLong = await q.query('select (lease_since is not null and lease_since < now() - make_interval(mins => $1::int)) as over from claims where id = $2', [LEASE_MAX_MINUTES, c.id]);
+    if (tooLong.rows[0].over) return { stop: { status: 410, message: `a lease is renewed for ${LEASE_MAX_MINUTES / 60} hours at most; hand the unit back or send it now`, extra: { withdrawn: false, expired: true } } };
     const u = await q.query('update claims set lease_until = now() + make_interval(mins => $1::int) where id = $2 returning lease_until', [LEASE_MINUTES, c.id]);
     await q.query('update contributors set last_seen = now() where handle = $1', [c.lease_handle]);
     return { ok: true, unit: unitId(c.program, c.id), until: u.rows[0].lease_until };
   });
+  if (out.stop) throw new HttpError(out.stop.status, out.stop.message, out.stop.extra);
   send(res, 200, out, NOSTORE);
 }
 
@@ -141,8 +156,10 @@ async function release(req, res, url) {
     const c = r.rows[0];
     if (!c) throw new HttpError(410, 'no live lease with that id', { withdrawn: true });
     const u = unitId(c.program, c.id);
-    await q.query('update claims set lease_id = null, lease_handle = null, lease_model = null, lease_price = null, lease_kind = null, lease_until = null where id = $1', [c.id]);
-    await q.query('insert into releases (claim_id, handle, reason) values ($1,$2,$3)', [c.id, c.lease_handle, reason]);
+    await q.query(`update claims set ${CLEAR_LEASE} where id = $1`, [c.id]);
+    // The lease id and price stay on the release row: the checker's verdict arrives after this call (the client
+    // releases the moment the pull request is open) and pays the price the lease was taken at.
+    await q.query('insert into releases (claim_id, handle, reason, lease_id, price) values ($1,$2,$3,$4,$5)', [c.id, c.lease_handle, reason, c.lease_id, c.lease_price]);
     if (reason !== 'submitted') await q.query('update contributors set released = released + 1, last_seen = now() where handle = $1', [c.lease_handle]);
     await event(q, {
       handle: c.lease_handle, claim: c.id, type: 'unit_released',
@@ -202,10 +219,19 @@ async function verdict(req, res) {
 
     if (stage === 'passed' || stage === 'failed') {
       // Points are frozen now: the lease price if the author holds (or held) this unit's lease, else the floor.
-      const leased = c.lease_id && b.lease && c.lease_id === b.lease && c.lease_handle === author;
+      // The lease is either still held, or already released as 'submitted' (the normal case: the client releases
+      // as soon as the pull request is open, long before CI judges the file). Both only count for the author.
+      let leasePrice = null;
+      if (b.lease) {
+        if (c.lease_id === b.lease && c.lease_handle === author) leasePrice = c.lease_price;
+        else {
+          const rl = await q.query("select price from releases where lease_id = $1 and claim_id = $2 and handle = $3 and reason = 'submitted' limit 1", [b.lease, c.id, author]);
+          leasePrice = rl.rows[0]?.price ?? null;
+        }
+      }
       const prior = await q.query('select id, points, state from submissions where pr = $1 for update', [pr]);
       if (prior.rows[0] && ['accepted', 'rejected'].includes(prior.rows[0].state)) return { unit: name, state: prior.rows[0].state, points: prior.rows[0].points, note: 'already decided' };
-      const points = prior.rows[0]?.points || (leased ? c.lease_price : FLOOR_POINTS);
+      const points = prior.rows[0]?.points || leasePrice || FLOOR_POINTS;
       const report = typeof b.report === 'object' && b.report ? b.report : {};
       await q.query(
         `insert into submissions (claim_id, handle, lease_id, pr, pr_url, kind, verdict, proposed_status, state, report, points)
@@ -218,7 +244,7 @@ async function verdict(req, res) {
         handle: author, claim: c.id, type: stage === 'passed' ? 'check_passed' : 'check_failed',
         message: stage === 'passed'
           ? `Checker passed PR #${pr} by ${author} on ${name} (${b.verdict || 'evidence'}${proposed ? ', proposing ' + proposed : ''}); awaiting review.`
-          : `Checker rejected PR #${pr} by ${author} on ${name}: ${String(report.summary_line || 'see the pull request').slice(0, 200)}`
+          : `Checker rejected PR #${pr} by ${author} on ${name}: ${plain(report.summary_line || 'see the pull request', 200)}`
       });
       return { unit: name, state: stage, points };
     }
@@ -241,7 +267,7 @@ async function verdict(req, res) {
     const status = s.proposed_status || c.status;
     await q.query(
       `update claims set status = $1, date_label = $2, source = coalesce($3, source), updated_at = now(),
-         lease_id = null, lease_handle = null, lease_model = null, lease_price = null, lease_kind = null, lease_until = null
+         ${CLEAR_LEASE}
        where id = $4`, [status, monthLabel(), sourceFrom(unitFile.evidence), c.id]);
     const opened = [];
     for (const n of (Array.isArray(unitFile.new_claims) ? unitFile.new_claims : []).slice(0, 3)) {

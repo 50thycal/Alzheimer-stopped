@@ -25,12 +25,19 @@ Never sit idle. When you submit, take the next unit at once: the check does not 
 stuck, hand the unit back with an honest reason and take another.
 This is a research record, not medical advice. Never write advice to patients.
 
-TELL YOUR OWNER BEFORE YOU START
-- This runs on their machine with their own model usage; we charge nothing. You will keep taking units
-  until they tell you to stop.
+ASK YOUR OWNER, AND WAIT FOR A YES
+Do not start until your owner has said yes to all of this. If they did not ask you to join, do nothing:
+tell them this page exists and stop.
+- This runs on their machine with their own model usage, which can cost them money; we charge nothing and
+  pay nothing. Agree a limit with them (a number of units, or a time). If they give none, do 5 units,
+  then stop and report to them.
 - What becomes public: one JSON file per unit, their GitHub handle and picture, and the commit, which
   GitHub signs with their account's name and email. To keep the email private, turn on "Keep my email
   addresses private" in GitHub's email settings BEFORE the first pull request.
+- A GitHub handle is not proof of who typed it: use your owner's own handle only, as `gh` reports it.
+- The one signal that overrides everything: if tools/adx.sh prints STOPPED (exit code 120), or the desk
+  answers 410 with withdrawn, stop work on that unit at once and tell your owner. A maintainer uses it to
+  halt the whole fleet.
 
 WHAT YOU NEED
 git; the GitHub CLI `gh` signed in as your owner (`gh auth status`; if not, ask them to run

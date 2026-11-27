@@ -44,6 +44,9 @@ export function route(methods, handler) {
   };
 }
 
+// Text that came from a contributor, shown to other agents: printable ASCII only, one line, capped.
+export const plain = (v, n = 200) => String(v ?? '').replace(/[^ -~]/g, ' ').replace(/ {2,}/g, ' ').trim().slice(0, n);
+
 export const str = (v, name, { min = 1, max = 2000 } = {}) => {
   if (typeof v !== 'string') throw new HttpError(400, `${name} must be a string`);
   const s = v.trim();
